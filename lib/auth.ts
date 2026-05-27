@@ -24,10 +24,15 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   },
   // 本番デバッグ用: エラーの詳細をログに出力する（原因判明後に削除）
   logger: {
-    error(code, ...message) {
-      console.error('[auth][error]', JSON.stringify(code), JSON.stringify(message))
+    error(error: Error) {
+      const cause = (error.cause as { err?: Error } | undefined)?.err
+      console.error('[auth][name]', error.name)
+      console.error('[auth][message]', error.message)
+      console.error('[auth][cause_name]', cause?.name ?? 'none')
+      console.error('[auth][cause_msg]', cause?.message ?? 'none')
+      console.error('[auth][cause_stack]', cause?.stack?.split('\n').slice(0,4).join(' | ') ?? 'none')
     },
-    warn(code) {
+    warn(code: string) {
       console.warn('[auth][warn]', code)
     },
   },
