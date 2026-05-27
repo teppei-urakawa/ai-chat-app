@@ -52,7 +52,7 @@ export function ChatInput({ input, isLoading, onInputChange, onSubmit }: Props) 
         </button>
       </form>
       <p className="text-center text-xs text-gray-400 mt-2">
-        Google Gemini 1.5 Flash がメッセージを生成します
+        Groq (Llama 3.3 70B) がメッセージを生成します
       </p>
     </div>
   )

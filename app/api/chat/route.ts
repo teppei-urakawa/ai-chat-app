@@ -1,11 +1,15 @@
 import { streamText, convertToModelMessages } from 'ai'
-import { google } from '@ai-sdk/google'
+import { createGroq } from '@ai-sdk/groq'
 import { auth } from '@/lib/auth'
 import { db } from '@/lib/db'
 import { conversations, messages } from '@/lib/db/schema'
 import { eq, and } from 'drizzle-orm'
 
 export const runtime = 'nodejs'
+
+const groq = createGroq({
+  apiKey: process.env.GROQ_API_KEY,
+})
 
 export async function POST(req: Request) {
   const session = await auth()
@@ -42,7 +46,8 @@ export async function POST(req: Request) {
   }
 
   const result = streamText({
-    model: google('gemini-1.5-flash'),
+    // 無料枠が最も大きいモデル（14,400リクエスト/日）
+    model: groq('llama-3.3-70b-versatile'),
     messages: await convertToModelMessages(uiMessages),
     onFinish: async ({ text }) => {
       if (conversationId) {

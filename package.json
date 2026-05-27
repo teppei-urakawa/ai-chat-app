@@ -9,7 +9,7 @@
     "lint": "eslint"
   },
   "dependencies": {
-    "@ai-sdk/google": "^3.0.79",
+    "@ai-sdk/groq": "^3.0.39",
     "@ai-sdk/react": "^3.0.193",
     "@auth/drizzle-adapter": "^1.11.2",
     "@neondatabase/serverless": "^1.1.0",
