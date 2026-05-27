@@ -11,6 +11,9 @@ type Props = {
 
 export function ChatInput({ input, isLoading, onInputChange, onSubmit }: Props) {
   const textareaRef = useRef<HTMLTextAreaElement>(null)
+  // IME（日本語変換など）で変換中かどうかを追跡する
+  // compositionstart/compositionend で更新し、Enter キー押下時に参照する
+  const isComposingRef = useRef(false)
 
   useEffect(() => {
     const el = textareaRef.current
@@ -21,6 +24,8 @@ export function ChatInput({ input, isLoading, onInputChange, onSubmit }: Props) 
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === 'Enter' && !e.shiftKey) {
+      // IME変換中（例：かな→漢字の確定Enter）は送信しない
+      if (isComposingRef.current) return
       e.preventDefault()
       if (input.trim() && !isLoading) {
         onSubmit(e as unknown as FormEvent<HTMLFormElement>)
@@ -64,6 +69,8 @@ export function ChatInput({ input, isLoading, onInputChange, onSubmit }: Props) 
           value={input}
           onChange={onInputChange}
           onKeyDown={handleKeyDown}
+          onCompositionStart={() => { isComposingRef.current = true }}
+          onCompositionEnd={() => { isComposingRef.current = false }}
           placeholder="メッセージを入力…"
           rows={1}
           disabled={isLoading}
