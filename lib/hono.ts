@@ -1,85 +1,45 @@
 import { Hono } from 'hono'
 import { auth } from './auth'
-import { db } from './db'
-import { conversations, messages } from './db/schema'
-import { eq, and, asc } from 'drizzle-orm'
+import { conversationRepository, messageRepository } from './chat/repository'
 
-// Honoコンテキストの型定義
-type Env = {
-  Variables: {
-    userId: string
-  }
-}
+type Env = { Variables: { userId: string } }
 
 const app = new Hono<Env>().basePath('/api')
 
-// 認証ミドルウェア
+// 認証ミドルウェア（第1防衛線）
 app.use('*', async (c, next) => {
   const session = await auth()
-  if (!session?.user?.id) {
-    return c.json({ error: 'Unauthorized' }, 401)
-  }
+  if (!session?.user?.id) return c.json({ error: 'Unauthorized' }, 401)
   c.set('userId', session.user.id)
   await next()
 })
 
-// 会話一覧取得
 app.get('/conversations', async (c) => {
-  const userId = c.get('userId')
-  const list = await db.query.conversations.findMany({
-    where: eq(conversations.userId, userId),
-    orderBy: (t, { desc }) => [desc(t.updatedAt)],
-  })
+  const list = await conversationRepository.findAll(c.get('userId'))
   return c.json(list)
 })
 
-// 新規会話作成
 app.post('/conversations', async (c) => {
-  const userId = c.get('userId')
   const { title } = await c.req.json().catch(() => ({ title: 'New Chat' }))
-  const [conv] = await db
-    .insert(conversations)
-    .values({ userId, title: title || 'New Chat' })
-    .returning()
+  const conv = await conversationRepository.create(c.get('userId'), title || 'New Chat')
   return c.json(conv, 201)
 })
 
-// 会話のタイトル更新
 app.patch('/conversations/:id', async (c) => {
-  const userId = c.get('userId')
-  const { id } = c.req.param()
   const { title } = await c.req.json()
-  const [conv] = await db
-    .update(conversations)
-    .set({ title, updatedAt: new Date() })
-    .where(and(eq(conversations.id, id), eq(conversations.userId, userId)))
-    .returning()
+  const conv = await conversationRepository.updateTitle(c.get('userId'), c.req.param('id'), title)
   if (!conv) return c.json({ error: 'Not found' }, 404)
   return c.json(conv)
 })
 
-// 会話削除
 app.delete('/conversations/:id', async (c) => {
-  const userId = c.get('userId')
-  const { id } = c.req.param()
-  await db
-    .delete(conversations)
-    .where(and(eq(conversations.id, id), eq(conversations.userId, userId)))
+  await conversationRepository.remove(c.get('userId'), c.req.param('id'))
   return c.body(null, 204)
 })
 
-// メッセージ一覧取得
 app.get('/conversations/:id/messages', async (c) => {
-  const userId = c.get('userId')
-  const { id } = c.req.param()
-  const conv = await db.query.conversations.findFirst({
-    where: and(eq(conversations.id, id), eq(conversations.userId, userId)),
-  })
-  if (!conv) return c.json({ error: 'Not found' }, 404)
-  const msgs = await db.query.messages.findMany({
-    where: eq(messages.conversationId, id),
-    orderBy: [asc(messages.createdAt)],
-  })
+  const msgs = await messageRepository.findByConversation(c.get('userId'), c.req.param('id'))
+  if (!msgs) return c.json({ error: 'Not found' }, 404)
   return c.json(msgs)
 })
 

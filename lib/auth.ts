@@ -3,6 +3,7 @@ import GitHub from 'next-auth/providers/github'
 import { DrizzleAdapter } from '@auth/drizzle-adapter'
 import { db } from './db'
 import { accounts, sessions, users, verificationTokens } from './db/schema'
+import { env } from './env'
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
   adapter: DrizzleAdapter(db, {
@@ -13,8 +14,9 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   }),
   providers: [
     GitHub({
-      clientId: process.env.AUTH_GITHUB_ID,
-      clientSecret: process.env.AUTH_GITHUB_SECRET,
+      // env経由で取得することで、未設定時に起動時エラーになる
+      clientId: env.githubClientId,
+      clientSecret: env.githubClientSecret,
     }),
   ],
   pages: {

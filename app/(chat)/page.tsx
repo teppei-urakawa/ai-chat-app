@@ -1,59 +1,87 @@
 'use client'
 
-import { useChat } from '@ai-sdk/react'
-import { DefaultChatTransport } from 'ai'
 import { ChatInput } from '@/components/chat/ChatInput'
 import { ChatMessage } from '@/components/chat/ChatMessage'
-import { useRef, useEffect, useState, type FormEvent } from 'react'
+import { useChatSession } from '@/hooks/useChatSession'
+import type { UIMessage } from 'ai'
+
+const SUGGESTIONS = ['コードを書いて', '文章を要約して', '英語に翻訳して', 'アイデアを出して'] as const
 
 export default function HomePage() {
-  const [input, setInput] = useState('')
-  const bottomRef = useRef<HTMLDivElement>(null)
-
-  const { messages, sendMessage, status } = useChat({
-    transport: new DefaultChatTransport({ api: '/api/chat' }),
-  })
-
-  const isLoading = status === 'submitted' || status === 'streaming'
-
-  const handleSubmit = (e: FormEvent<HTMLFormElement>) => {
-    e.preventDefault()
-    if (!input.trim() || isLoading) return
-    sendMessage({ text: input })
-    setInput('')
-  }
-
-  useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
-  }, [messages])
+  const { messages, input, setInput, isLoading, bottomRef, handleSubmit } = useChatSession()
 
   return (
-    <div className="flex flex-col h-full">
-      <div className="flex-1 overflow-y-auto px-4 py-6">
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', background: 'var(--bg)' }}>
+      <div style={{ flex: 1, overflowY: 'auto', paddingTop: 24, paddingBottom: 8 }}>
         {messages.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-full text-center">
-            <h2 className="text-2xl font-semibold text-gray-700 dark:text-gray-300 mb-2">
-              AI チャット
-            </h2>
-            <p className="text-gray-400 text-sm">
-              メッセージを送信して会話を始めましょう
-            </p>
-          </div>
+          <EmptyState onSuggestion={setInput} />
         ) : (
-          <div className="max-w-3xl mx-auto">
-            {messages.map((m) => (
-              <ChatMessage key={m.id} message={m} />
-            ))}
-          </div>
+          <MessageList messages={messages} />
         )}
         <div ref={bottomRef} />
       </div>
       <ChatInput
         input={input}
         isLoading={isLoading}
-        onInputChange={(e) => setInput(e.target.value)}
+        onInputChange={e => setInput(e.target.value)}
         onSubmit={handleSubmit}
       />
+    </div>
+  )
+}
+
+function MessageList({ messages }: { messages: UIMessage[] }) {
+  return (
+    <div style={{ maxWidth: 800, margin: '0 auto', paddingBottom: 8 }}>
+      {messages.map(m => <ChatMessage key={m.id} message={m} />)}
+    </div>
+  )
+}
+
+function EmptyState({ onSuggestion }: { onSuggestion: (text: string) => void }) {
+  return (
+    <div style={{
+      display: 'flex', flexDirection: 'column', alignItems: 'center',
+      justifyContent: 'center', height: '100%', textAlign: 'center', padding: '0 24px',
+    }}>
+      <div style={{
+        width: 64, height: 64, borderRadius: 20, marginBottom: 20,
+        background: 'var(--accent-grad)',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        fontSize: 28, fontWeight: 700, color: '#fff',
+        boxShadow: '0 8px 32px var(--accent-shadow)',
+      }}>A</div>
+
+      <h2 style={{ fontSize: 22, fontWeight: 700, color: 'var(--text)', margin: '0 0 8px' }}>
+        何でも聞いてください
+      </h2>
+      <p style={{ color: 'var(--text-muted)', fontSize: 14, maxWidth: 360, margin: '0 0 24px' }}>
+        Llama 3.3 70B がリアルタイムで回答します。<br />
+        コード・翻訳・アイデア出し、なんでもどうぞ。
+      </p>
+
+      <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', justifyContent: 'center' }}>
+        {SUGGESTIONS.map(s => (
+          <button
+            key={s}
+            onClick={() => onSuggestion(s)}
+            style={{
+              padding: '8px 14px', background: 'var(--surface)',
+              border: '1px solid var(--border)', borderRadius: 20,
+              color: 'var(--text-muted)', fontSize: 13, cursor: 'pointer',
+              transition: 'all 0.15s',
+            }}
+            onMouseEnter={e => {
+              e.currentTarget.style.borderColor = 'rgba(124,92,252,0.4)'
+              e.currentTarget.style.color = 'var(--text)'
+            }}
+            onMouseLeave={e => {
+              e.currentTarget.style.borderColor = 'var(--border)'
+              e.currentTarget.style.color = 'var(--text-muted)'
+            }}
+          >{s}</button>
+        ))}
+      </div>
     </div>
   )
 }

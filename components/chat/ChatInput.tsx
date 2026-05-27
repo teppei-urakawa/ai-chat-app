@@ -12,16 +12,14 @@ type Props = {
 export function ChatInput({ input, isLoading, onInputChange, onSubmit }: Props) {
   const textareaRef = useRef<HTMLTextAreaElement>(null)
 
-  // 入力内容に応じてtextareaの高さを自動調整
   useEffect(() => {
-    const textarea = textareaRef.current
-    if (!textarea) return
-    textarea.style.height = 'auto'
-    textarea.style.height = `${Math.min(textarea.scrollHeight, 200)}px`
+    const el = textareaRef.current
+    if (!el) return
+    el.style.height = 'auto'
+    el.style.height = `${Math.min(el.scrollHeight, 180)}px`
   }, [input])
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    // Shift+Enterで改行、Enterのみで送信
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault()
       if (input.trim() && !isLoading) {
@@ -31,29 +29,89 @@ export function ChatInput({ input, isLoading, onInputChange, onSubmit }: Props) 
   }
 
   return (
-    <div className="border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 p-4">
-      <form onSubmit={onSubmit} className="flex items-end gap-3 max-w-3xl mx-auto">
+    <div style={{
+      padding: '16px 20px 20px',
+      background: 'var(--bg)',
+      borderTop: '1px solid var(--border)',
+    }}>
+      <form
+        onSubmit={onSubmit}
+        style={{
+          maxWidth: 760, margin: '0 auto',
+          background: 'var(--surface)',
+          border: '1px solid var(--border)',
+          borderRadius: 16,
+          padding: '12px 14px',
+          display: 'flex', flexDirection: 'column', gap: 10,
+          boxShadow: '0 0 0 1px rgba(124,92,252,0.0)',
+          transition: 'border-color 0.2s, box-shadow 0.2s',
+        }}
+        onFocus={e => {
+          const form = e.currentTarget
+          form.style.borderColor = 'rgba(124,92,252,0.5)'
+          form.style.boxShadow = '0 0 0 3px rgba(124,92,252,0.1)'
+        }}
+        onBlur={e => {
+          if (!e.currentTarget.contains(e.relatedTarget)) {
+            const form = e.currentTarget
+            form.style.borderColor = 'var(--border)'
+            form.style.boxShadow = '0 0 0 1px rgba(124,92,252,0.0)'
+          }
+        }}
+      >
         <textarea
           ref={textareaRef}
           value={input}
           onChange={onInputChange}
           onKeyDown={handleKeyDown}
-          placeholder="メッセージを入力… (Enterで送信、Shift+Enterで改行)"
+          placeholder="メッセージを入力…"
           rows={1}
-          className="flex-1 resize-none rounded-xl border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:text-white placeholder-gray-400"
           disabled={isLoading}
+          style={{
+            flex: 1, resize: 'none',
+            background: 'none', border: 'none', outline: 'none',
+            color: 'var(--text)', fontSize: 14, lineHeight: 1.6,
+            fontFamily: 'inherit',
+          }}
         />
-        <button
-          type="submit"
-          disabled={!input.trim() || isLoading}
-          className="px-4 py-3 bg-blue-600 text-white rounded-xl hover:bg-blue-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors shrink-0"
-        >
-          {isLoading ? '…' : '送信'}
-        </button>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>
+            Enter で送信 · Shift+Enter で改行
+          </span>
+          <button
+            type="submit"
+            disabled={!input.trim() || isLoading}
+            style={{
+              padding: '7px 16px',
+              background: input.trim() && !isLoading
+                ? 'linear-gradient(135deg, #7c5cfc, #4fa3f7)'
+                : 'var(--surface-2)',
+              border: 'none', borderRadius: 10,
+              color: input.trim() && !isLoading ? '#fff' : 'var(--text-muted)',
+              fontSize: 13, fontWeight: 600, cursor: input.trim() && !isLoading ? 'pointer' : 'not-allowed',
+              transition: 'all 0.2s',
+              display: 'flex', alignItems: 'center', gap: 6,
+            }}
+          >
+            {isLoading ? (
+              <>
+                <span style={{
+                  width: 12, height: 12, borderRadius: '50%',
+                  border: '2px solid rgba(255,255,255,0.3)',
+                  borderTop: '2px solid #fff',
+                  animation: 'spin 0.7s linear infinite',
+                  display: 'inline-block',
+                }} />
+                生成中
+              </>
+            ) : '送信 ↑'}
+          </button>
+        </div>
       </form>
-      <p className="text-center text-xs text-gray-400 mt-2">
-        Groq (Llama 3.3 70B) がメッセージを生成します
+      <p style={{ textAlign: 'center', fontSize: 11, color: 'var(--text-muted)', marginTop: 10 }}>
+        Groq · Llama 3.3 70B
       </p>
+      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
     </div>
   )
 }
