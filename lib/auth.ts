@@ -22,6 +22,15 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   pages: {
     signIn: '/login',
   },
+  // 本番デバッグ用: エラーの詳細をログに出力する（原因判明後に削除）
+  logger: {
+    error(code, ...message) {
+      console.error('[auth][error]', JSON.stringify(code), JSON.stringify(message))
+    },
+    warn(code) {
+      console.warn('[auth][warn]', code)
+    },
+  },
   callbacks: {
     session({ session, user }) {
       session.user.id = user.id
